@@ -32,6 +32,7 @@
             box-shadow: 0 15px 40px rgba(0, 0, 0, 0.25);
             overflow: hidden;
             margin-top: 30px;
+            position: relative;
         }
         
         header {
@@ -72,6 +73,7 @@
         
         .input-group {
             margin-bottom: 25px;
+            position: relative;
         }
         
         label {
@@ -89,12 +91,21 @@
             border-radius: 12px;
             font-size: 1rem;
             transition: all 0.3s ease;
+            padding-right: 40px;
         }
         
         input:focus {
             border-color: #1da1f2;
             outline: none;
             box-shadow: 0 0 0 3px rgba(29, 161, 242, 0.2);
+        }
+        
+        .input-icon {
+            position: absolute;
+            right: 15px;
+            top: 42px;
+            color: #657786;
+            font-size: 1.2rem;
         }
         
         .btn {
@@ -133,6 +144,18 @@
             font-size: 1.25rem;
         }
         
+        .btn-success {
+            background: linear-gradient(to right, #17bf63, #119e50);
+        }
+        
+        .btn-warning {
+            background: linear-gradient(to right, #ffad1f, #e6a00a);
+        }
+        
+        .btn-secondary {
+            background: linear-gradient(to right, #657786, #4b5a6a);
+        }
+        
         .result-section {
             background-color: #f5f8fa;
             border-radius: 15px;
@@ -167,6 +190,7 @@
             font-size: 1.15rem;
             line-height: 1.7;
             white-space: pre-wrap;
+            position: relative;
         }
         
         .char-count {
@@ -185,18 +209,6 @@
             display: flex;
             gap: 15px;
             flex-wrap: wrap;
-        }
-        
-        .btn-secondary {
-            background: linear-gradient(to right, #657786, #4b5a6a);
-        }
-        
-        .btn-success {
-            background: linear-gradient(to right, #17bf63, #119e50);
-        }
-        
-        .btn-warning {
-            background: linear-gradient(to right, #ffad1f, #e6a00a);
         }
         
         .loading {
@@ -307,6 +319,36 @@
             min-width: 30px;
         }
         
+        .status-bar {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            margin-top: 15px;
+            font-size: 0.9rem;
+        }
+        
+        .status-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 8px 15px;
+            background: #f0f8ff;
+            border-radius: 8px;
+            border-left: 4px solid #1da1f2;
+        }
+        
+        .status-item.success {
+            border-left-color: #17bf63;
+        }
+        
+        .status-item.error {
+            border-left-color: #e0245e;
+        }
+        
+        .status-item i {
+            font-size: 1.2rem;
+        }
+        
         @media (max-width: 768px) {
             .container {
                 margin-top: 15px;
@@ -331,6 +373,31 @@
             .btn {
                 width: 100%;
             }
+        }
+        
+        .notification {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            padding: 15px 25px;
+            background: #17bf63;
+            color: white;
+            border-radius: 8px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+            transform: translateX(200%);
+            transition: transform 0.3s ease;
+            z-index: 1000;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .notification.show {
+            transform: translateX(0);
+        }
+        
+        .notification.error {
+            background: #e0245e;
         }
     </style>
 </head>
@@ -361,6 +428,9 @@
                 <div class="input-group">
                     <label for="link-input"><i class="fas fa-link"></i> Masukkan Link Artikel:</label>
                     <input type="url" id="link-input" placeholder="https://contoh.com/artikel-terbaru" required>
+                    <div class="input-icon">
+                        <i class="fas fa-globe"></i>
+                    </div>
                 </div>
                 
                 <button id="generate-btn" class="btn btn-large">
@@ -370,8 +440,24 @@
             
             <div class="loading" id="loading">
                 <div class="spinner"></div>
-                <p>Sedang membuat postingan profesional...</p>
-                <p>Scraping hashtag trending & memproses dengan DeepSeek AI</p>
+                <div class="status-bar">
+                    <div class="status-item">
+                        <i class="fas fa-spinner fa-spin"></i>
+                        <span>Memulai proses pembuatan postingan...</span>
+                    </div>
+                    <div class="status-item">
+                        <i class="fas fa-sync fa-spin"></i>
+                        <span id="status-1">Mengambil data trending dari trends24.in</span>
+                    </div>
+                    <div class="status-item">
+                        <i class="fas fa-sync fa-spin"></i>
+                        <span id="status-2">Memproses dengan DeepSeek AI</span>
+                    </div>
+                    <div class="status-item">
+                        <i class="fas fa-sync fa-spin"></i>
+                        <span id="status-3">Menyusun hasil akhir</span>
+                    </div>
+                </div>
             </div>
             
             <div class="result-section" id="result-section">
@@ -414,6 +500,11 @@
         </div>
     </div>
     
+    <div class="notification" id="notification">
+        <i class="fas fa-check-circle"></i>
+        <span>Postingan berhasil disalin!</span>
+    </div>
+    
     <footer>
         <p><strong>X.com Post Generator Pro</strong> | © 2023 All rights reserved</p>
         <p>Powered by DeepSeek AI - Scraping langsung dari trends24.in</p>
@@ -421,7 +512,6 @@
 
     <script>
         // API Key DeepSeek (untuk demo ini)
-        // Catatan: Dalam aplikasi produksi, API key seharusnya disimpan di server
         const DEEPSEEK_API_KEY = "sk-0ffdbcc6bb19489db76aa736bca93d08";
         
         document.addEventListener('DOMContentLoaded', function() {
@@ -435,17 +525,40 @@
             const newBtn = document.getElementById('new-btn');
             const loading = document.getElementById('loading');
             const trendingTags = document.getElementById('trending-tags');
+            const notification = document.getElementById('notification');
+            const status1 = document.getElementById('status-1');
+            const status2 = document.getElementById('status-2');
+            const status3 = document.getElementById('status-3');
+            
+            // Fungsi untuk menampilkan notifikasi
+            function showNotification(message, isError = false) {
+                const notif = notification;
+                notif.querySelector('span').textContent = message;
+                notif.className = 'notification';
+                notif.classList.add(isError ? 'error' : 'success');
+                notif.classList.add('show');
+                
+                if (isError) {
+                    notif.querySelector('i').className = 'fas fa-exclamation-circle';
+                } else {
+                    notif.querySelector('i').className = 'fas fa-check-circle';
+                }
+                
+                setTimeout(() => {
+                    notif.classList.remove('show');
+                }, 3000);
+            }
             
             // Fungsi untuk scraping hashtag dari trends24.in
             async function scrapeTrendingHashtags() {
                 try {
+                    status1.innerHTML = '<i class="fas fa-sync fa-spin"></i> Mengambil data trending dari trends24.in...';
+                    
                     // Gunakan proxy untuk menghindari CORS
-                    const proxyUrl = 'https://cors-anywhere.herokuapp.com/';
+                    const proxyUrl = 'https://corsproxy.io/?';
                     const targetUrl = 'https://trends24.in/united-states/';
                     
-                    loading.querySelector('p').textContent = "Mengambil data trending dari trends24.in...";
-                    
-                    const response = await fetch(proxyUrl + targetUrl);
+                    const response = await fetch(proxyUrl + encodeURIComponent(targetUrl));
                     const html = await response.text();
                     
                     // Parsing HTML
@@ -458,14 +571,17 @@
                     
                     hashtagElements.forEach(el => {
                         const text = el.textContent.trim();
-                        if(text.startsWith('#')) {
+                        if(text.startsWith('#') && !text.includes('#')) {
                             hashtags.push(text);
                         }
                     });
                     
+                    status1.innerHTML = '<i class="fas fa-check-circle" style="color:#17bf63"></i> Data trending berhasil diambil!';
+                    
                     return hashtags.slice(0, 15); // Ambil 15 top hashtag
                 } catch (error) {
                     console.error('Error scraping hashtags:', error);
+                    status1.innerHTML = '<i class="fas fa-exclamation-circle" style="color:#e0245e"></i> Gagal mengambil data, menggunakan hashtag default';
                     
                     // Fallback jika scraping gagal
                     return [
@@ -499,7 +615,7 @@
             // Fungsi untuk membuat postingan dengan DeepSeek API
             async function generatePostWithDeepSeek(link, hashtags) {
                 try {
-                    loading.querySelector('p').textContent = "Membuat postingan dengan DeepSeek AI...";
+                    status2.innerHTML = '<i class="fas fa-sync fa-spin"></i> Membuat postingan dengan DeepSeek AI...';
                     
                     // Pilih 4 hashtag secara acak
                     const shuffled = [...hashtags].sort(() => 0.5 - Math.random());
@@ -533,16 +649,19 @@
                         }
                     );
                     
+                    status2.innerHTML = '<i class="fas fa-check-circle" style="color:#17bf63"></i> Postingan berhasil dibuat dengan AI';
+                    
                     return response.data.choices[0].message.content.trim();
                 } catch (error) {
                     console.error('Error generating post:', error);
+                    status2.innerHTML = '<i class="fas fa-exclamation-circle" style="color:#e0245e"></i> Gagal membuat dengan AI, menggunakan template';
                     
                     // Fallback jika API gagal
                     const fallbackTemplates = [
-                        `Check out this amazing article about the latest tech trends: ${link} ${selectedTags}`,
-                        `Just read an insightful piece on innovation in the tech industry. Highly recommend! ${link} ${selectedTags}`,
-                        `This article provides a fresh perspective on AI development. A must-read for tech enthusiasts! ${link} ${selectedTags}`,
-                        `Discover how technology is shaping our future in this comprehensive article. ${link} ${selectedTags}`
+                        `Check out this amazing article about the latest tech trends: ${link} #Technology #Innovation #AI #FutureTech`,
+                        `Just read an insightful piece on innovation in the tech industry. Highly recommend! ${link} #TechNews #Startup #DigitalMarketing #WebDevelopment`,
+                        `This article provides a fresh perspective on AI development. A must-read for tech enthusiasts! ${link} #MachineLearning #DataScience #BigData #Programming`,
+                        `Discover how technology is shaping our future in this comprehensive article. ${link} #CloudComputing #IoT #Blockchain #TechTrends`
                     ];
                     
                     const randomTemplate = fallbackTemplates[Math.floor(Math.random() * fallbackTemplates.length)];
@@ -555,13 +674,13 @@
                 const link = linkInput.value.trim();
                 
                 if(!link) {
-                    alert('Silakan masukkan link artikel terlebih dahulu');
+                    showNotification('Silakan masukkan link artikel terlebih dahulu', true);
                     return;
                 }
                 
                 // Validasi URL
                 if(!link.startsWith('http://') && !link.startsWith('https://')) {
-                    alert('Harap masukkan URL yang valid (dimulai dengan http:// atau https://)');
+                    showNotification('Harap masukkan URL yang valid (dimulai dengan http:// atau https://)', true);
                     return;
                 }
                 
@@ -570,6 +689,11 @@
                 resultSection.style.display = 'none';
                 
                 try {
+                    // Reset status
+                    status1.innerHTML = '<i class="fas fa-sync fa-spin"></i> Mengambil data trending dari trends24.in';
+                    status2.innerHTML = '<i class="fas fa-sync fa-spin"></i> Memproses dengan DeepSeek AI';
+                    status3.innerHTML = '<i class="fas fa-sync fa-spin"></i> Menyusun hasil akhir';
+                    
                     // Scraping hashtag trending
                     const hashtags = await scrapeTrendingHashtags();
                     
@@ -586,13 +710,17 @@
                     resultContent.textContent = finalPost;
                     charCount.textContent = finalPost.length;
                     
+                    status3.innerHTML = '<i class="fas fa-check-circle" style="color:#17bf63"></i> Hasil akhir siap!';
+                    
                     // Sembunyikan loading dan tampilkan hasil
-                    loading.style.display = 'none';
-                    resultSection.style.display = 'block';
+                    setTimeout(() => {
+                        loading.style.display = 'none';
+                        resultSection.style.display = 'block';
+                    }, 1000);
                 } catch (error) {
                     console.error('Error generating post:', error);
                     loading.style.display = 'none';
-                    alert(`Terjadi kesalahan: ${error.message || 'Gagal membuat postingan'}`);
+                    showNotification(`Terjadi kesalahan: ${error.message || 'Gagal membuat postingan'}`, true);
                 }
             });
             
@@ -601,17 +729,10 @@
                 const text = resultContent.textContent;
                 navigator.clipboard.writeText(text)
                     .then(() => {
-                        // Ubah tampilan tombol sementara
-                        copyBtn.innerHTML = '<i class="fas fa-check"></i> Tersalin!';
-                        copyBtn.style.background = 'linear-gradient(to right, #17bf63, #119e50)';
-                        
-                        setTimeout(() => {
-                            copyBtn.innerHTML = '<i class="fas fa-copy"></i> Copy Teks';
-                            copyBtn.style.background = 'linear-gradient(to right, #657786, #4b5a6a)';
-                        }, 2000);
+                        showNotification('Postingan berhasil disalin!');
                     })
                     .catch(err => {
-                        alert('Gagal menyalin teks: ' + err);
+                        showNotification('Gagal menyalin teks: ' + err, true);
                     });
             });
             
@@ -624,6 +745,13 @@
             // Event listener untuk tombol new
             newBtn.addEventListener('click', function() {
                 generateBtn.click();
+            });
+            
+            // Event listener untuk input link (Enter key)
+            linkInput.addEventListener('keypress', function(e) {
+                if (e.key === 'Enter') {
+                    generateBtn.click();
+                }
             });
             
             // Inisialisasi tampilan
